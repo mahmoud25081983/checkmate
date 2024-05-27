@@ -24,4 +24,4 @@ exports = async function(authEvent) {
   } catch (error) {
     console.error(`Failed to add user ${user.id} to the users collection: ${error}`);
   }
-}; 
+};
