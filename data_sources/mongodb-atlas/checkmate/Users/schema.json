@@ -1,0 +1,20 @@
+{
+    "title": "User",
+    "properties": {
+        "_id": {
+            "bsonType": "string"
+        },
+        "createTime": {
+            "bsonType": "date"
+        },
+        "email": {
+            "bsonType": "string"
+        },
+        "password": {
+            "bsonType": "string"
+        }
+    },
+    "required": [
+        "_id"
+    ]
+}

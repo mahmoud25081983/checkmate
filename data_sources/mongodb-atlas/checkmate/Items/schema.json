@@ -1,0 +1,30 @@
+{
+    "title": "Items",
+    "type": "object",
+    "required": [
+        "_id",
+        "done",
+        "text",
+        "user_id"
+    ],
+    "properties": {
+        "_id": {
+            "bsonType": "objectId"
+        },
+        "done": {
+            "bsonType": "bool"
+        },
+        "shared_with": {
+            "bsonType": "array",
+            "items": {
+                "bsonType": "string"
+            }
+        },
+        "text": {
+            "bsonType": "string"
+        },
+        "user_id": {
+            "bsonType": "string"
+        }
+    }
+}
