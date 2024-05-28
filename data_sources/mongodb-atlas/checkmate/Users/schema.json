@@ -2,7 +2,7 @@
     "title": "User",
     "properties": {
         "_id": {
-            "bsonType": "string"
+            "bsonType": "objectId"
         },
         "createTime": {
             "bsonType": "date"
@@ -11,6 +11,9 @@
             "bsonType": "string"
         },
         "password": {
+            "bsonType": "string"
+        },
+        "userId": {
             "bsonType": "string"
         }
     },
