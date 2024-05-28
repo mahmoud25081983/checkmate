@@ -10,8 +10,8 @@ exports = async function(authEvent) {
 
   // Construct the user document to insert
   const userDocument = {
-    _id: user.id,
     email: user.data.email,
+    _id: user.id,
     createTime: new Date(),
     password: user.data.password
     // Add other user attributes as needed
