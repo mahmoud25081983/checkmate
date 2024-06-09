@@ -1,51 +1,75 @@
-import 'package:checkmate/schemas/account.dart';
+import 'package:checkmate/schemas/item.dart';
 import 'package:realm/realm.dart';
-import 'package:mongo_dart/mongo_dart.dart';
+
+import '../schemas/account.dart';
 
 class UserService {
   final App atlasApp;
-  final Db db;
+  User? currentUser;
 
-  UserService(this.atlasApp, this.db);
+  UserService(this.atlasApp);
 
-  Future<List<User>> getData() async {
-    final arrData = atlasApp.users.toList();
-    return arrData;
-  }
+  searchUser({required String email}) {}
 
-  Future<User> createUser(String email, String password) async {
+  Future<User> registerUserEmailPassword(
+      String email, String password, String name) async {
     EmailPasswordAuthProvider authProvider =
         EmailPasswordAuthProvider(atlasApp);
     await authProvider.registerUser(email, password);
-    
-    // Find user by id
-    var userId = atlasApp.currentUser!.id;
-    await updateUserPassword(userId, password);
-    
-    // Return the logged-in user
-    return loginUser(email, password);
+    User loggedInUser =
+        await atlasApp.logIn(Credentials.emailPassword(email, password));
+    currentUser = loggedInUser;
+    print(currentUser!.id);
+    await setRole(loggedInUser, email, name);
+    await loggedInUser.refreshCustomData();
+    return loggedInUser;
   }
 
-  Future<void> updateUserPassword(String userId, String password) async {
-    // Get reference to the MongoDB collection
-    var usersCollection = db.collection('users');
-
-    // Update the user document with the password field
-    await usersCollection.updateOne(
-      {'_id': userId},
-      {
-        r'$set': {'password': password}
-      },
-    );
-  }
-
-  Future<User> loginUser(String email, String password) async {
+  Future<User> logInUserEmailPassword(String email, String password) async {
     Credentials credentials = Credentials.emailPassword(email, password);
-    return atlasApp.logIn(credentials);
+    final loggedInUser = await atlasApp.logIn(credentials);
+    currentUser = loggedInUser;
+    return loggedInUser;
   }
+
+  Future<void> setRole(User loggedInUser, String email, String name) async {
+    final realm =
+        Realm(Configuration.flexibleSync(loggedInUser, [Account.schema, Item.schema]));
+    String subscriptionName = "rolesSubscription";
+    realm.subscriptions.update((mutableSubscriptions) =>
+        mutableSubscriptions.add(realm.all<Account>(), name: subscriptionName));
+    await realm.subscriptions.waitForSynchronization();
+    realm.write(
+        () => realm.add(Account(ObjectId(), email, name, loggedInUser.id)));
+    await realm.syncSession.waitForUpload();
+    realm.subscriptions.update((mutableSubscriptions) =>
+        mutableSubscriptions.removeByName(subscriptionName));
+    await realm.subscriptions.waitForSynchronization();
+    await realm.syncSession.waitForDownload();
+    realm.close();
+  }
+  
 
   Future<void> logoutUser() async {
-    return atlasApp.currentUser!.logOut();
+    if (atlasApp.currentUser != null) {
+      await atlasApp.currentUser!.logOut();
+    }
   }
 
+  Future<List<User>> getUsers() async {
+    final arrUsers = atlasApp.users.toList();
+    return arrUsers;
+  }
+
+  Future<void> deleteUserFromAppService() async {
+    try {
+      if (atlasApp.currentUser == null) {
+        throw Exception('User is not logged in');
+      }
+      final currentUserData = atlasApp.currentUser!;
+      await atlasApp.deleteUser(currentUserData);
+    } catch (e) {
+      print('Error deleting user: $e');
+    }
+  }
 }

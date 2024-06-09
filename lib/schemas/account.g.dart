@@ -8,14 +8,25 @@ part of 'account.dart';
 
 // ignore_for_file: type=lint
 class Account extends _Account with RealmEntity, RealmObjectBase, RealmObject {
+  static var _defaultsSet = false;
+
   Account(
     ObjectId id,
     String email,
-    String password,
-  ) {
+    String name,
+    String userId, {
+    bool isAdmin = false,
+  }) {
+    if (!_defaultsSet) {
+      _defaultsSet = RealmObjectBase.setDefaults<Account>({
+        'isAdmin': false,
+      });
+    }
     RealmObjectBase.set(this, '_id', id);
     RealmObjectBase.set(this, 'email', email);
-    RealmObjectBase.set(this, 'password', password);
+    RealmObjectBase.set(this, 'name', name);
+    RealmObjectBase.set(this, 'isAdmin', isAdmin);
+    RealmObjectBase.set(this, 'user_id', userId);
   }
 
   Account._();
@@ -31,10 +42,19 @@ class Account extends _Account with RealmEntity, RealmObjectBase, RealmObject {
   set email(String value) => RealmObjectBase.set(this, 'email', value);
 
   @override
-  String get password =>
-      RealmObjectBase.get<String>(this, 'password') as String;
+  String get name => RealmObjectBase.get<String>(this, 'name') as String;
   @override
-  set password(String value) => RealmObjectBase.set(this, 'password', value);
+  set name(String value) => RealmObjectBase.set(this, 'name', value);
+
+  @override
+  bool get isAdmin => RealmObjectBase.get<bool>(this, 'isAdmin') as bool;
+  @override
+  set isAdmin(bool value) => RealmObjectBase.set(this, 'isAdmin', value);
+
+  @override
+  String get userId => RealmObjectBase.get<String>(this, 'user_id') as String;
+  @override
+  set userId(String value) => RealmObjectBase.set(this, 'user_id', value);
 
   @override
   Stream<RealmObjectChanges<Account>> get changes =>
@@ -51,7 +71,9 @@ class Account extends _Account with RealmEntity, RealmObjectBase, RealmObject {
       SchemaProperty('id', RealmPropertyType.objectid,
           mapTo: '_id', primaryKey: true),
       SchemaProperty('email', RealmPropertyType.string),
-      SchemaProperty('password', RealmPropertyType.string),
+      SchemaProperty('name', RealmPropertyType.string),
+      SchemaProperty('isAdmin', RealmPropertyType.bool),
+      SchemaProperty('userId', RealmPropertyType.string, mapTo: 'user_id'),
     ]);
   }
 }

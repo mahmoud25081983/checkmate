@@ -7,8 +7,9 @@ class _Item {
   @PrimaryKey()
   @MapTo("_id")
   late ObjectId id;
+  
   late String text;
-  late bool done;
+  bool isDone = false;
   @MapTo("user_id")
   late String userId;
   @MapTo("shared_with")

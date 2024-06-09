@@ -1,8 +1,9 @@
+import 'package:checkmate/schemas/account.dart';
 import 'package:checkmate/schemas/item.dart';
 import 'package:realm/realm.dart';
 
 class ItemService {
-  final User user;
+   User user;
   late final Realm realm;
 
   ItemService(this.user) {
@@ -10,11 +11,16 @@ class ItemService {
   }
 
   Realm openRealm() {
-    var realmConfig = Configuration.flexibleSync(user, [Item.schema]);
+    var realmConfig = Configuration.flexibleSync(user, [Item.schema, Account.schema]);
     var realm = Realm(realmConfig);
     realm.subscriptions.update((mutableSubscriptions) {
+            mutableSubscriptions.clear();
+
       mutableSubscriptions.add(realm.all<Item>());
+      mutableSubscriptions.add(realm.all<Account>());
     });
+        realm.subscriptions.waitForSynchronization();
+
     return realm;
   }
 
@@ -23,65 +29,92 @@ class ItemService {
         "userId == '${user.id}' || sharedWith contains '${user.id}'");
   }
 
+  RealmResults<Account> getUsers() {
+    return realm.all<Account>(); // Get all users
+  }
+
   add(String text) {
     realm
-        .write(() => {realm.add<Item>(Item(ObjectId(), text, false, user.id))});
+        .write(() => {realm.add<Item>(Item(ObjectId(), text, user.id ))});
   }
 
   toggleStatus(Item item) {
-    realm.write(() => {item.done = !item.done});
+    realm.write(() => {item.isDone = !item.isDone});
   }
 
   delete(Item item) {
     realm.write(() => {realm.delete(item)});
   }
 
-  shareItemWithUser(Item item, User user) {
-    realm.write(() => {
-          if (!item.sharedWith.contains(user.id))
-            {
-              item.sharedWith.add(user.id),
-            }
-        });
+     shareItemWithUser(Item item, Account user) {
+    // Share the item with another user
+    realm.write(() {
+      if (!item.sharedWith.contains(user.userId)) {
+        item.sharedWith.add(user.userId);
+      }
+    });
   }
-}
+    removeSharedUser(Item item, Account user) {
+    // Remove the user from the sharedWith list
+    realm.write(() {
+      item.sharedWith.remove(user.userId);
+    });
+  }   
 
+   List<Account> getUsersSharedWith(Item item) {
+    List<Account> sharedUsers = [];
+    for (var userId in item.sharedWith) {
+      var user = realm.query<Account>("userId == '$userId'").firstOrNull;
+      if (user != null) {
+        sharedUsers.add(user);
+      }
+    }
+    return sharedUsers;
+  }
 
+    Account? getCreatedByUser(Item item) {
+    // Find the account of the user who created the item
+    return realm.query<Account>("userId == '${item.userId}'").firstOrNull;
+  }
 
-/* checkmate
+  bool isSharedWithCurrentUser(Item item) {
+    // Check if the item is shared with the current user
+    return item.sharedWith.contains(user.id);
+  }
+   
 
-exports = function(changeEvent) {
-  const mongodb = context.services.get("mongodb-atlas");
-  const appServiceUsersCollection = mongodb.db("checkmate").collection("AppServiceUsers");
-  const usersCollection = mongodb.db("checkmate").collection("Users");
+  Account getCurrentUser() {
+    // Find the current user's account based on the provided user object
+    var currentUserAccount = getUsers().where((e) => e.userId == user.id).firstOrNull;
+    if (currentUserAccount != null) {
+      return currentUserAccount;
+    } else {
+      throw Exception('Current user not found.');
+    }
+  }   
 
-  if (changeEvent.operationType === "insert") {
-    const newUser = changeEvent.fullDocument;
+    Future<void> updateItem(Item item, String? text) async {
+    realm.write(() {
+      if (text != null) {
+        item.text = text;
+      }
 
-    // Check if user already exists in Users collection
-    return usersCollection.findOne({ email: newUser.email })
-      .then(existingUser => {
-        if (existingUser) {
-          console.log(`User with email ${newUser.email} already exists.`);
-          return null;
-        }
+    });
+  }
 
-        // Add the new user to the Users collection
-        return usersCollection.insertOne({
-          _id: newUser._id,
-          email: newUser.email,
-          // Add other user fields as needed
-        })
-        .then(result => {
-          console.log(`User added with _id: ${result.insertedId}`);
-          return result;
-        });
-      })
-      .catch(err => {
-        console.error("Error checking or adding user:", err);
-        throw new Error("Error checking or adding user");
+    Future<void> deleteAccount(Account account) async {
+    try {
+      realm.write(() {
+        realm.delete(account);
       });
+    } catch (e) {
+      print('Error deleting account: $e');
+      // Handle any errors that occur during deletion
+    }
   }
 
-  return Promise.resolve();
-}; */
+    Future<void> close() async {
+    await user.logOut();
+      realm.close();
+  }                     
+}

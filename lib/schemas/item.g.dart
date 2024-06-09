@@ -8,16 +8,23 @@ part of 'item.dart';
 
 // ignore_for_file: type=lint
 class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
+  static var _defaultsSet = false;
+
   Item(
     ObjectId id,
     String text,
-    bool done,
     String userId, {
+    bool isDone = false,
     Iterable<String> sharedWith = const [],
   }) {
+    if (!_defaultsSet) {
+      _defaultsSet = RealmObjectBase.setDefaults<Item>({
+        'isDone': false,
+      });
+    }
     RealmObjectBase.set(this, '_id', id);
     RealmObjectBase.set(this, 'text', text);
-    RealmObjectBase.set(this, 'done', done);
+    RealmObjectBase.set(this, 'isDone', isDone);
     RealmObjectBase.set(this, 'user_id', userId);
     RealmObjectBase.set<RealmList<String>>(
         this, 'shared_with', RealmList<String>(sharedWith));
@@ -36,9 +43,9 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
   set text(String value) => RealmObjectBase.set(this, 'text', value);
 
   @override
-  bool get done => RealmObjectBase.get<bool>(this, 'done') as bool;
+  bool get isDone => RealmObjectBase.get<bool>(this, 'isDone') as bool;
   @override
-  set done(bool value) => RealmObjectBase.set(this, 'done', value);
+  set isDone(bool value) => RealmObjectBase.set(this, 'isDone', value);
 
   @override
   String get userId => RealmObjectBase.get<String>(this, 'user_id') as String;
@@ -67,7 +74,7 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
       SchemaProperty('id', RealmPropertyType.objectid,
           mapTo: '_id', primaryKey: true),
       SchemaProperty('text', RealmPropertyType.string),
-      SchemaProperty('done', RealmPropertyType.bool),
+      SchemaProperty('isDone', RealmPropertyType.bool),
       SchemaProperty('userId', RealmPropertyType.string, mapTo: 'user_id'),
       SchemaProperty('sharedWith', RealmPropertyType.string,
           mapTo: 'shared_with', collectionType: RealmCollectionType.list),

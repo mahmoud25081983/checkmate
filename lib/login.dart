@@ -1,11 +1,10 @@
-import 'package:checkmate/home.dart';
 import 'package:checkmate/services/user_service.dart';
+import 'package:checkmate/splash.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:realm/realm.dart';
+import 'package:checkmate/home.dart';
 import 'package:checkmate/services/item_service.dart';
-
-import 'splash.dart';
 
 class LoginScreen extends StatelessWidget {
   final UserService userService;
@@ -17,31 +16,28 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title:  const Text("Login"),
-        actions: [
-          IconButton(
-              onPressed: () async {
-                try {
-                  final navigator = Navigator.of(context);
-                  navigator.pushReplacement(
-                      MaterialPageRoute(builder: (BuildContext context) {
-                    return SplashScreen(
-                      userService: userService,
-                    );
-                  }));
-                } on RealmException catch (error) {
-                  if (kDebugMode) {
-                    print("Error during logout ${error.message}");
-                  }
-                }
-              },
-              icon: const Icon(
-                Icons.logout,
-                size: 30,
-              ))
-        ],
-      ),
+      appBar: AppBar(actions: [
+         IconButton(
+                  style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(20)),
+                  onPressed: () async {
+                    try {
+                      final navigator = Navigator.of(context);
+                      navigator.pushReplacement(
+                          MaterialPageRoute(builder: (BuildContext context) {
+                        return SplashScreen(
+                          userService: userService,
+                        );
+                      }));
+                    } on RealmException catch (error) {
+                      if (kDebugMode) {
+                        print(
+                            "Error while loading signup screen. ${error.message}");
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.exit_to_app))
+      ],),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -85,7 +81,7 @@ class LoginScreen extends StatelessWidget {
                     onPressed: () async {
                       try {
                         final navigator = Navigator.of(context);
-                        User user = await userService.loginUser(
+                        User user = await userService.logInUserEmailPassword(
                             emailController.text, passwordController.text);
                         navigator.pushReplacement(
                             MaterialPageRoute(builder: (BuildContext context) {
