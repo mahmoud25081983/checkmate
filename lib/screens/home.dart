@@ -1,20 +1,17 @@
 import 'package:checkmate/schemas/account.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:realm/realm.dart';
-import 'package:checkmate/services/item_service.dart';
+import 'package:checkmate/services/realm_service.dart';
 import 'package:checkmate/services/user_service.dart';
-import 'package:checkmate/splash.dart';
 import 'package:checkmate/schemas/item.dart';
 
-class HomeScreen extends StatefulWidget {
-  final ItemService itemService;
-  final UserService userService;
+import 'profile_screen.dart';
+import 'splash.dart';
 
-  const HomeScreen(
-      {Key? key, required this.itemService, required this.userService})
-      : super(key: key);
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -30,12 +27,16 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isEdit = false;
   late Item currentItem;
   // late Account currentUser;
+  late UserService userService;
+  late ItemService itemService;
 
   @override
   void initState() {
     super.initState();
-    allItems = widget.itemService.getItems();
-    users = widget.itemService.getUsers();
+    userService = Provider.of<UserService>(context, listen: false);
+    itemService = Provider.of<ItemService>(context, listen: false);
+    allItems = itemService.getItems();
+    users = itemService.getUsers();
     // currentUser = widget.itemService.getCurrentUser();
     //  print("${currentUser.email}");
 
@@ -43,36 +44,19 @@ class _HomeScreenState extends State<HomeScreen> {
     //_fetchUsers();
   }
 
-  Future<void> _fetchUsers() async {
-    users = await widget.itemService.getUsers();
-    setState(() {});
-  }
-
-  void _fetchSharedUsers(Item item) {
-    sharedUsersIds = widget.itemService.getUsersSharedWith(item);
-    setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:
-            Text("${widget.userService.atlasApp.currentUser!.profile.email}"),
+        title: Text("${userService.atlasApp.currentUser!.profile.email}"),
         actions: [
           IconButton(
             onPressed: () async {
               try {
                 final navigator = Navigator.of(context);
-                await widget.userService.logoutUser();
-                //  await widget.itemService .deleteAccount(currentUser);
-                await widget.userService.deleteUserFromAppService();
-
-                // widget.itemService.close(); // Close the Realm instance
-
                 navigator.pushReplacement(
                   MaterialPageRoute(builder: (BuildContext context) {
-                    return SplashScreen(userService: widget.userService);
+                    return ProfileScreen();
                   }),
                 );
               } on RealmException catch (error) {
@@ -90,12 +74,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () async {
               try {
                 final navigator = Navigator.of(context);
-                await widget.userService.logoutUser();
-                // widget.itemService.close(); // Close the Realm instance
+                userService.logoutUser();
+                await itemService.close(); // Close the Realm instance
 
                 navigator.pushReplacement(
                   MaterialPageRoute(builder: (BuildContext context) {
-                    return SplashScreen(userService: widget.userService);
+                    return const SplashScreen();
                   }),
                 );
               } on RealmException catch (error) {
@@ -125,21 +109,21 @@ class _HomeScreenState extends State<HomeScreen> {
               final item = items[index];
 
               //  final isCurrentUserItem = item.userId == currentUser.userId;
-              final createdByUser = widget.itemService.getCreatedByUser(item);
+              final createdByUser = itemService.getCreatedByUser(item);
               final sharedWithCurrentUser =
-                  widget.itemService.isSharedWithCurrentUser(item);
+                  itemService.isSharedWithCurrentUser(item);
               /*            final isMine =
                   item.userId != currentUser.userId
                       ? ""
                       : "(Mine)"; */
 
-              final isMine = (item.userId == widget.userService.currentUser?.id);
+              final isMine = (item.userId == userService.currentUser?.id);
 
               return Card(
-                margin: EdgeInsets.all(8.0),
+                margin: const EdgeInsets.all(8.0),
                 color: item.isDone ? Colors.green.shade50 : Colors.transparent,
                 child: Padding(
-                  padding: EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -156,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               semanticLabel: "Mark done",
                             ),
                             onPressed: () {
-                              widget.itemService.toggleStatus(item);
+                              itemService.toggleStatus(item);
                             },
                           ),
                           Expanded(
@@ -173,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 Text(
                                   item.text,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -183,33 +167,38 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 8),
-                      _buildUserDropdown(item),
-                      _buildSelectedUsers(item),
+                      const SizedBox(height: 8),
                       if (!sharedWithCurrentUser)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            IconButton(
-                              onPressed: () {
-                                isEdit = true;
-                                currentItem = item;
-                                showDialog(
-                                  context: context,
-                                  builder: dialogBuilder,
-                                );
-                              },
-                              icon: Icon(Icons.edit),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.delete_outline,
-                                color: Colors.red.shade500,
-                                semanticLabel: "Delete item",
-                              ),
-                              onPressed: () {
-                                widget.itemService.delete(item);
-                              },
+                            _buildUserDropdown(item),
+                            _buildSelectedUsers(item),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    isEdit = true;
+                                    currentItem = item;
+                                    showDialog(
+                                      context: context,
+                                      builder: dialogBuilder,
+                                    );
+                                  },
+                                  icon: const Icon(Icons.edit),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.red.shade500,
+                                    semanticLabel: "Delete item",
+                                  ),
+                                  onPressed: () {
+                                    itemService.deleteItem(item);
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -276,18 +265,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             print(itemName);
                           }
                           if (isEdit == false) {
-                            widget.itemService.add(itemName);
+                            itemService.add(itemName);
                           } else if (isEdit == true) {
-                            widget.itemService
-                                .updateItem(currentItem, itemName);
+                            itemService.updateItem(currentItem, itemName);
                           }
-                          setState(() {});
                           Navigator.pop(context);
                         }
                       },
                       child: Text(
                         isEdit == true ? "Edit" : "Add",
-                        style: TextStyle(fontSize: 20),
+                        style: const TextStyle(fontSize: 20),
                       ),
                     ),
                   ),
@@ -320,13 +307,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildUserDropdown(Item item) {
-     List<Account> otherUsers =
-        users.where((user) => user.userId != widget.userService.currentUser?.id).toList(); 
-
+/*     List<Account> otherUsers = users
+        .where((user) => user.userId != userService.currentUser?.id)
+        .toList();
+ */
     return DropdownButton<Account>(
-      hint: Text("Share with..."), // Display hint
+      hint: const Text("Share with..."), // Display hint
       value: null, // Set the current user as the initial selected value
-      items: otherUsers.map((Account user) {
+      items: itemService.getFriends().map((Account user) {
         return DropdownMenuItem<Account>(
           value: user,
           child: Text(
@@ -335,14 +323,13 @@ class _HomeScreenState extends State<HomeScreen> {
       }).toList(),
       onChanged: (Account? user) {
         if (user != null) {
-          widget.itemService.shareItemWithUser(item, user);
+          itemService.shareItemWithUser(item, user);
           if (selectedUsers[item.id] == null) {
             selectedUsers[item.id] = [];
           }
-          setState(() {
-            selectedUsers[item.id]!
-                .add(user); // Add the selected user to the list for this item
-          });
+
+          selectedUsers[item.id]!
+              .add(user); // Add the selected user to the list for this item
         }
       },
     );
@@ -351,23 +338,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSelectedUsers(Item item) {
     // Check if the item is shared with the current user
     bool sharedWithCurrentUser =
-        item.sharedWith.contains(widget.userService.currentUser!.id);
+        item.sharedWith.contains(userService.currentUser!.id);
 
     // If the item is shared with the current user, display the users it is shared with
     if (sharedWithCurrentUser) {
-      return SizedBox();
+      return const SizedBox();
     } else {
       // If the item is not shared with the current user, return an empty widget
       return Wrap(
-        direction: Axis.vertical,
+        direction: Axis.horizontal,
+        alignment: WrapAlignment.start,
+        spacing: 2,
         crossAxisAlignment: WrapCrossAlignment.center,
-        children: widget.itemService
+        children: itemService
             .getUsersSharedWith(item)
             .map((user) => Chip(
                   padding: EdgeInsets.zero,
-                  label: Text("${user.name + " " + user.email}"),
+                  label: Text("${user.name} ${user.email}"),
                   onDeleted: () {
-                    widget.itemService.removeSharedUser(item, user);
+                    itemService.removeSharedUser(item, user);
                     selectedUsers[item.id]?.remove(user);
                     // Remove user from the database
                   },

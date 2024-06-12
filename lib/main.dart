@@ -1,22 +1,32 @@
 import 'package:checkmate/services/user_service.dart';
-import 'package:checkmate/splash.dart';
 import 'package:flutter/material.dart';
-import 'package:realm/realm.dart';
+
+import 'screens/splash.dart';
+import 'package:provider/provider.dart';
+
+import 'services/realm_service.dart';
+
 
 const appId = "checkmate-llsapiw";
 
 void main() {
-    final App atlasApp = App(AppConfiguration(appId));
-  final UserService userService = UserService(atlasApp);
-  runApp(MyApp(
-    userService: userService,
-  ));
+   //  final App atlasApp = App(AppConfiguration(appId));
+ // final UserService userService = UserService(atlasApp);
+  return runApp(MultiProvider(providers: [
+    ChangeNotifierProvider<UserService>(create: (_) => UserService(appId)),
+    ChangeNotifierProxyProvider<UserService, ItemService?>(
+        // RealmServices can only be initialized only if the user is logged in.
+        create: (context) => null,
+        update: (BuildContext context, UserService appServices, ItemService? realmServices) {
+          return appServices.atlasApp.currentUser != null ? ItemService(appServices.atlasApp) : null;
+        }),
+  ], child:  const MyApp()));
 }
 
-class MyApp extends StatelessWidget {
-  final UserService userService;
 
-  const MyApp({super.key, required this.userService});
+class MyApp extends StatelessWidget {
+
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +36,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: SplashScreen(
-        userService: userService,
-      ),
+      home: const SplashScreen(),
     );
   }
 }

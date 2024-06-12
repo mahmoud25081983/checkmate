@@ -16,6 +16,7 @@ class Account extends _Account with RealmEntity, RealmObjectBase, RealmObject {
     String name,
     String userId, {
     bool isAdmin = false,
+    Iterable<String> friends = const [],
   }) {
     if (!_defaultsSet) {
       _defaultsSet = RealmObjectBase.setDefaults<Account>({
@@ -27,6 +28,8 @@ class Account extends _Account with RealmEntity, RealmObjectBase, RealmObject {
     RealmObjectBase.set(this, 'name', name);
     RealmObjectBase.set(this, 'isAdmin', isAdmin);
     RealmObjectBase.set(this, 'user_id', userId);
+    RealmObjectBase.set<RealmList<String>>(
+        this, 'friends', RealmList<String>(friends));
   }
 
   Account._();
@@ -57,6 +60,13 @@ class Account extends _Account with RealmEntity, RealmObjectBase, RealmObject {
   set userId(String value) => RealmObjectBase.set(this, 'user_id', value);
 
   @override
+  RealmList<String> get friends =>
+      RealmObjectBase.get<String>(this, 'friends') as RealmList<String>;
+  @override
+  set friends(covariant RealmList<String> value) =>
+      throw RealmUnsupportedSetError();
+
+  @override
   Stream<RealmObjectChanges<Account>> get changes =>
       RealmObjectBase.getChanges<Account>(this);
 
@@ -74,6 +84,8 @@ class Account extends _Account with RealmEntity, RealmObjectBase, RealmObject {
       SchemaProperty('name', RealmPropertyType.string),
       SchemaProperty('isAdmin', RealmPropertyType.bool),
       SchemaProperty('userId', RealmPropertyType.string, mapTo: 'user_id'),
+      SchemaProperty('friends', RealmPropertyType.string,
+          collectionType: RealmCollectionType.list),
     ]);
   }
 }

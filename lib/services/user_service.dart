@@ -1,15 +1,16 @@
 import 'package:checkmate/schemas/item.dart';
+import 'package:flutter/material.dart';
 import 'package:realm/realm.dart';
 
 import '../schemas/account.dart';
 
-class UserService {
-  final App atlasApp;
+class UserService with ChangeNotifier {
+    String id;
+
+   App atlasApp;
   User? currentUser;
 
-  UserService(this.atlasApp);
-
-  searchUser({required String email}) {}
+UserService(this.id) : atlasApp = App(AppConfiguration(id));
 
   Future<User> registerUserEmailPassword(
       String email, String password, String name) async {
@@ -18,10 +19,13 @@ class UserService {
     await authProvider.registerUser(email, password);
     User loggedInUser =
         await atlasApp.logIn(Credentials.emailPassword(email, password));
-    currentUser = loggedInUser;
-    print(currentUser!.id);
+
     await setRole(loggedInUser, email, name);
     await loggedInUser.refreshCustomData();
+        currentUser = loggedInUser;
+    print(currentUser!.id);
+        notifyListeners();
+
     return loggedInUser;
   }
 
@@ -29,6 +33,8 @@ class UserService {
     Credentials credentials = Credentials.emailPassword(email, password);
     final loggedInUser = await atlasApp.logIn(credentials);
     currentUser = loggedInUser;
+        notifyListeners();
+
     return loggedInUser;
   }
 

@@ -1,17 +1,19 @@
-import 'package:checkmate/login.dart';
+import 'package:checkmate/screens/login.dart';
 import 'package:checkmate/services/user_service.dart';
-import 'package:checkmate/signup.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:realm/realm.dart';
 
-class SplashScreen extends StatelessWidget {
-  final UserService userService;
+import 'signup.dart';
 
-  const SplashScreen({Key? key, required this.userService}) : super(key: key);
+class SplashScreen extends StatelessWidget {
+
+  const SplashScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final userService = Provider.of<UserService>(context, listen: false);
     return Scaffold(
       body: Center(
         child: Padding(
@@ -39,7 +41,6 @@ class SplashScreen extends StatelessWidget {
                       navigator.pushReplacement(
                           MaterialPageRoute(builder: (BuildContext context) {
                         return LoginScreen(
-                          userService: userService,
                         );
                       }));
                     } on RealmException catch (error) {

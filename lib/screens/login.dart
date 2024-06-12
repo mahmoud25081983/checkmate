@@ -1,20 +1,23 @@
 import 'package:checkmate/services/user_service.dart';
-import 'package:checkmate/splash.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:realm/realm.dart';
-import 'package:checkmate/home.dart';
-import 'package:checkmate/services/item_service.dart';
+import 'package:checkmate/screens/home.dart';
+import 'package:checkmate/services/realm_service.dart';
+
+import 'splash.dart';
 
 class LoginScreen extends StatelessWidget {
-  final UserService userService;
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  LoginScreen({Key? key, required this.userService}) : super(key: key);
+  LoginScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+        final userService = Provider.of<UserService>(context, listen: false);
+
     return Scaffold(
       appBar: AppBar(actions: [
          IconButton(
@@ -26,7 +29,6 @@ class LoginScreen extends StatelessWidget {
                       navigator.pushReplacement(
                           MaterialPageRoute(builder: (BuildContext context) {
                         return SplashScreen(
-                          userService: userService,
                         );
                       }));
                     } on RealmException catch (error) {
@@ -86,8 +88,7 @@ class LoginScreen extends StatelessWidget {
                         navigator.pushReplacement(
                             MaterialPageRoute(builder: (BuildContext context) {
                           return HomeScreen(
-                            itemService: ItemService(user),
-                            userService: userService,
+                           
                           );
                         }));
                       } on RealmException catch (error) {
