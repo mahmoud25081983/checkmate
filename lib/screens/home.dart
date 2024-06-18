@@ -12,6 +12,7 @@ import 'splash.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+  static const String routeName = 'homescreen';
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -42,6 +43,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     //currentAccount = widget.itemService.getCurrentUser();
     //_fetchUsers();
+    // Listen for changes in the item service
+    itemService.addListener(_handleItemServiceChanges);
+  }
+
+  @override
+  void dispose() {
+    // Remove the listener when the screen is disposed
+    itemService.removeListener(_handleItemServiceChanges);
+    super.dispose();
+  }
+
+  void _handleItemServiceChanges() {
+    // Update the allItems whenever there are changes in the item service
+    setState(() {
+      allItems = itemService.getItems();
+    });
   }
 
   @override
@@ -56,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 final navigator = Navigator.of(context);
                 navigator.pushReplacement(
                   MaterialPageRoute(builder: (BuildContext context) {
-                    return ProfileScreen();
+                    return const ProfileScreen();
                   }),
                 );
               } on RealmException catch (error) {
@@ -324,6 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onChanged: (Account? user) {
         if (user != null) {
           itemService.shareItemWithUser(item, user);
+          itemService.itemsSharesWithThisUser(user, item);
           if (selectedUsers[item.id] == null) {
             selectedUsers[item.id] = [];
           }
@@ -357,6 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: Text("${user.name} ${user.email}"),
                   onDeleted: () {
                     itemService.removeSharedUser(item, user);
+                    itemService.removeItemFromUser(user, item);
                     selectedUsers[item.id]?.remove(user);
                     // Remove user from the database
                   },

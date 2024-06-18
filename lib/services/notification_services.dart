@@ -1,8 +1,10 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:checkmate/main.dart';
+import 'package:checkmate/services/realm_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-
+import '../screens/home.dart';
 
 class NotificationService extends ChangeNotifier {
   static Future<void> initializeNotification() async {
@@ -17,7 +19,7 @@ class NotificationService extends ChangeNotifier {
           channelDescription: 'channel Description test',
           defaultColor: Colors.blue,
           ledColor: Colors.white,
-          importance: NotificationImportance.Default,
+          importance: NotificationImportance.High,
           channelShowBadge: true,
           onlyAlertOnce: true,
           playSound: true,
@@ -69,20 +71,15 @@ class NotificationService extends ChangeNotifier {
   ) async {
     debugPrint("onActionReceivedMethod");
     final payload = receivedNotification.payload ?? {};
-    final context = Jamia.navigatorKey.currentContext;
+    final context = MyApp.navigatorKey.currentContext;
     if (payload["navigate"] == "true") {
-      final tableId = int.tryParse(payload["tableId"] ?? "");
-      if (tableId != null) {
-        final provider =
-            Provider.of<DataTableProvider>(context!, listen: false);
-        final selectedTable = provider.getTableById(tableId);
-        if (selectedTable != null) {
-          provider.setSelectedTable(selectedTable);
-        //  AdMobservices.creatInterstitialAd();
-          Navigator.of(context).pushNamedAndRemoveUntil(
-              GeneratedTableScreen.routeName, (route) => route.isFirst);
-        } else {}
-      }
+      final tableId = int.tryParse(payload["itemId"] ?? "");
+
+      final provider = Provider.of<ItemService>(context!, listen: false);
+
+      //  AdMobservices.creatInterstitialAd();
+      Navigator.of(context).pushNamedAndRemoveUntil(
+          HomeScreen.routeName, (route) => route.isFirst);
     }
   }
 
@@ -104,7 +101,7 @@ class NotificationService extends ChangeNotifier {
   }) async {
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
-        id: -1,
+        id: createUniqueId(),
         channelKey: 'high',
         title: title,
         body: body,
@@ -130,60 +127,11 @@ class NotificationService extends ChangeNotifier {
     );
   }
 
-  static Future<void> cancelAllNotifications() async {
-    await AwesomeNotifications().cancelAll();
+    static  int createUniqueId() {
+    return DateTime.now().millisecondsSinceEpoch.remainder(100000);
   }
 
-  static List<NotificationModel> notifications = [];
 
-  static Future<List<NotificationModel>> loadNotifications(
-      MyTable table) async {
-    final fetchedNotifications =
-        await AwesomeNotifications().listScheduledNotifications();
 
-    final notificationsForTable = fetchedNotifications.where((notification) {
-      final payload = notification.content?.payload ?? {};
-      final tableId = int.tryParse(payload["tableId"] ?? "");
-      return tableId == table.id;
-    }).toList();
-
-    notifications = notificationsForTable;
-
-    return notifications;
   }
 
-  static Future<void> cancelSpecificDateNotifications(MyTable table) async {
-    await loadNotifications(table);
-    if (notifications.isNotEmpty) {
-      await AwesomeNotifications().cancel(notifications.last.content!.id!);
-    }
-  }
-
-  static Future<void> cancelSpecificTableNotifications(MyTable table) async {
-    await loadNotifications(table);
-    for (int i = 0; i < notifications.length; i++) {
-      debugPrint("${notifications[i].content!.id}");
-
-      await AwesomeNotifications().cancel(notifications[i].content!.id!);
-    }
-  }
-
-  static Future<bool> isDateScheduled(DateTime date, MyTable table) async {
-   await loadNotifications(table);
-    return notifications.any((notification) {
-      final content = notification.content;
-      if (content != null) {
-        final displayedDate = content.displayedDate;
-        if (displayedDate != null) {
-          final notificationDate = DateTime(
-            displayedDate.year,
-            displayedDate.month,
-            displayedDate.day,
-          );
-          return notificationDate.isAtSameMomentAs(date);
-        }
-      }
-      return true;
-    });
-  }
-}

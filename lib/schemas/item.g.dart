@@ -13,7 +13,8 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
   Item(
     ObjectId id,
     String text,
-    String userId, {
+    String userId,
+    String itemId, {
     bool isDone = false,
     Iterable<String> sharedWith = const [],
   }) {
@@ -26,6 +27,7 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
     RealmObjectBase.set(this, 'text', text);
     RealmObjectBase.set(this, 'isDone', isDone);
     RealmObjectBase.set(this, 'user_id', userId);
+    RealmObjectBase.set(this, 'itemId', itemId);
     RealmObjectBase.set<RealmList<String>>(
         this, 'shared_with', RealmList<String>(sharedWith));
   }
@@ -53,6 +55,11 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
   set userId(String value) => RealmObjectBase.set(this, 'user_id', value);
 
   @override
+  String get itemId => RealmObjectBase.get<String>(this, 'itemId') as String;
+  @override
+  set itemId(String value) => RealmObjectBase.set(this, 'itemId', value);
+
+  @override
   RealmList<String> get sharedWith =>
       RealmObjectBase.get<String>(this, 'shared_with') as RealmList<String>;
   @override
@@ -76,6 +83,7 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
       SchemaProperty('text', RealmPropertyType.string),
       SchemaProperty('isDone', RealmPropertyType.bool),
       SchemaProperty('userId', RealmPropertyType.string, mapTo: 'user_id'),
+      SchemaProperty('itemId', RealmPropertyType.string),
       SchemaProperty('sharedWith', RealmPropertyType.string,
           mapTo: 'shared_with', collectionType: RealmCollectionType.list),
     ]);

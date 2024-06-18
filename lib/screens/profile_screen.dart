@@ -10,7 +10,7 @@ import 'splash.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
-
+ static const String routeName = 'profilescreen';
   @override
   ProfileScreenState createState() => ProfileScreenState();
 }

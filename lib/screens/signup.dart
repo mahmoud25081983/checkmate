@@ -9,12 +9,12 @@ import 'package:checkmate/services/realm_service.dart';
 import 'splash.dart';
 
 class SignupScreen extends StatelessWidget {
-  final UserService userService;
+   static const String routeName = 'signupscreen';
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
 
-  SignupScreen({Key? key, required this.userService}) : super(key: key);
+  SignupScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -93,9 +93,7 @@ class SignupScreen extends StatelessWidget {
                             emailController.text, passwordController.text, nameController.text);
                         navigator.pushReplacement(
                             MaterialPageRoute(builder: (BuildContext context) {
-                          return HomeScreen(
-                
-                          );
+                          return HomeScreen();
                         }));
                       } on RealmException catch (error) {
                         if (kDebugMode) {

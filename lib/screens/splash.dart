@@ -8,6 +8,7 @@ import 'package:realm/realm.dart';
 import 'signup.dart';
 
 class SplashScreen extends StatelessWidget {
+  static const String routeName = 'splashscreen';
 
   const SplashScreen({Key? key}) : super(key: key);
 
@@ -62,9 +63,7 @@ class SplashScreen extends StatelessWidget {
                       final navigator = Navigator.of(context);
                       navigator.pushReplacement(
                           MaterialPageRoute(builder: (BuildContext context) {
-                        return SignupScreen(
-                          userService: userService,
-                        );
+                        return SignupScreen();
                       }));
                     } on RealmException catch (error) {
                       if (kDebugMode) {

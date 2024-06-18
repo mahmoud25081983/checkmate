@@ -12,6 +12,7 @@ class _Item {
   bool isDone = false;
   @MapTo("user_id")
   late String userId;
+  late String itemId;
   @MapTo("shared_with")
   late List<String> sharedWith;
 }

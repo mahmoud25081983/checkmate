@@ -8,12 +8,14 @@ class _Account {
   @MapTo("_id")
   @PrimaryKey()
   late ObjectId id;
-  
+
   late String email;
   late String name;
   bool isAdmin = false;
   @MapTo('user_id')
   late String userId;
+  late List<String> tokens;
   late List<String> friends;
-
+  late List<String> itemsId;
+  late List<String> newItemsId;
 }

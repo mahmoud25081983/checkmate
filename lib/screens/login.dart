@@ -11,7 +11,7 @@ import 'splash.dart';
 class LoginScreen extends StatelessWidget {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
+ static const String routeName = 'loginscreen';
   LoginScreen({Key? key}) : super(key: key);
 
   @override

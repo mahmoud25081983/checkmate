@@ -2,6 +2,7 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+  //  id 'com.google.gms.google-services'
 }
 
 def localProperties = new Properties()
@@ -64,4 +65,11 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+           // classpath 'com.google.gms:google-services:4.3.10' // Check for the latest version
+                implementation 'com.google.firebase:firebase-analytics:21.0.0' // Check for the latest version
+                    implementation 'com.google.firebase:firebase-messaging:23.0.0' // Check for the latest version
+
+
+
+}
