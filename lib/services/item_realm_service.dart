@@ -14,10 +14,23 @@ extension ItemRealmService on ItemService {
     notifyListeners();
   }
 
-  toggleStatus(Item item) {
-    realm.write(() => {item.isDone = !item.isDone});
-    notifyListeners();
-  }
+ toggleStatus(Item item, Account currentUser) {
+  realm.write(() {
+    item.isDone = !item.isDone;
+  //  final accounts = getCreatedByUser( item);
+    if (item.isDone) {
+      // Remove the item from all users who have it shared
+      var allUsers = getUsersSharedWith(item);
+  
+      for (var user in allUsers) {
+        item.sharedWith.remove(user.userId);
+      }
+            item.doneByUser = currentUser.name;
+
+    }
+  });
+  notifyListeners();
+}
 
   shareItemWithUser(Item item, Account user) async {
     // Share the item with another user
@@ -26,7 +39,7 @@ extension ItemRealmService on ItemService {
         item.sharedWith.add(user.userId);
       }
     });
-    _startListeningForAccountChanges();
+  //  _startListeningForAccountChanges();
     notifyListeners();
   }
 

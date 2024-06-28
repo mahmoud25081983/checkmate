@@ -1,20 +1,14 @@
 import 'dart:async';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:realm/realm.dart';
 
 import 'package:checkmate/schemas/account.dart';
 import 'package:checkmate/schemas/item.dart';
-import 'package:checkmate/services/user_service.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'notification_services.dart';
 
-part "messaging.dart";
 part 'item_realm_service.dart';
 part 'user_realm_service.dart';
 
@@ -22,37 +16,74 @@ class ItemService with ChangeNotifier {
   User? user;
   late Realm realm;
   App app;
-  Item? currentItem;
-  late StreamSubscription<RealmResultsChanges<Item>> _itemSubscription;
-  late StreamSubscription<RealmResultsChanges<Account>> _accountSubscription;
-   List<StreamSubscription<RealmObjectChanges<Account>>> _itemSubscriptions = [];
+  Account? currentAccount;
+  List<StreamSubscription<RealmObjectChanges<Account>>> _itemSubscriptions = [];
 
   ItemService(this.app) {
-    realm = openRealm();
-  //  _startListeningForItemChanges();
-   // _startListeningForAccountChanges();
+    _initialize();
   }
 
-  Realm openRealm() {
-    if (app.currentUser != null || user != app.currentUser) {
-      user ??= app.currentUser;
-      var realmConfig =
-          Configuration.flexibleSync(user!, [Item.schema, Account.schema]);
-      realm = Realm(realmConfig);
-      realm.subscriptions.update((mutableSubscriptions) {
-        mutableSubscriptions.clear();
-        mutableSubscriptions.add(realm.all<Item>());
-        mutableSubscriptions.add(realm.all<Account>());
-      });
+  Future<void> _initialize() async {
+    if (app.currentUser == null) {
+      throw Exception("User is not authenticated");
     }
-    realm.subscriptions.waitForSynchronization();
+    user = app.currentUser;
+    realm = await _openRealm();
+    await _fetchCurrentUserAccount();
+    _startListeningForAccountChanges();
+  }
+
+  Future<Realm> _openRealm() async {
+    var realmConfig =
+        Configuration.flexibleSync(user!, [Item.schema, Account.schema]);
+    realm = Realm(realmConfig);
+    realm.subscriptions.update((mutableSubscriptions) {
+      mutableSubscriptions.clear();
+      mutableSubscriptions.add(realm.all<Item>());
+      mutableSubscriptions.add(realm.all<Account>());
+    });
+    await realm.subscriptions.waitForSynchronization();
     return realm;
   }
 
+  Future<void> _fetchCurrentUserAccount() async {
+    final userId = user!.id;
+    currentAccount =
+        realm.all<Account>().firstWhere((account) => account.userId == userId);
+    if (currentAccount == null) {
+      throw Exception('Current user account not found.');
+    }
+  }
+
+  void _startListeningForAccountChanges() {
+    if (currentAccount == null) return;
+
+    final subscription = currentAccount!.changes.listen((change) {
+      if (change.isDeleted) return;
+
+      var newItemsIds = change.object.newItemsId.toList();
+      newItemsIds.forEach((itemId) async {
+        final item =
+            realm.all<Item>().where((item) => item.itemId == itemId).first;
+        await schedulNotifications(item);
+        newRemoveItemFromUser(currentAccount!, item);
+        itemsSharesWithThisUser(currentAccount!, item);
+      });
+    });
+    _itemSubscriptions.add(subscription);
+  }
+
   @override
+  void dispose() {
+    realm.close();
+    _itemSubscriptions.forEach((subscription) => subscription.cancel());
+    super.dispose();
+  }
+
   Future<void> close() async {
-    await _itemSubscription.cancel();
-    await _accountSubscription.cancel();
+    // await _itemSubscription.cancel();
+    //  await _accountSubscription.cancel();
+    _itemSubscriptions.clear();
     if (user != null) {
       await user?.logOut();
       user = null;
@@ -60,16 +91,7 @@ class ItemService with ChangeNotifier {
     realm.close();
   }
 
-  @override
-  void dispose() {
-    print("dispose");
-    _itemSubscription.cancel();
-    _accountSubscription.cancel();
-    realm.close();
-    super.dispose();
-  }
-
-  void _startListeningForItemChanges() {
+/*   void _startListeningForItemChanges() {
     final items = realm.all<Item>();
     _itemSubscription = items.changes.listen((changes) {
       // Handle item changes
@@ -86,44 +108,19 @@ class ItemService with ChangeNotifier {
       });
       notifyListeners();
     });
-  }
+  } */
 
-  void _startListeningForAccountChanges() {
-    final account = getCurrentUser();
-    _itemSubscriptions = [];
-
-      final subscription = account.changes.listen((change) {
-        // Handle changes for this specific item
-
-        if (change.isDeleted) {
-          return;
-        }
-
-        var itemsIds = change.object.itemsId.toList();
-        
-
-        itemsIds.forEach((itemId) {
-          print(account.itemsId.map((e) => e == account.userId));
-            print(account.name);
-        });
-      });
-      _itemSubscriptions.add(subscription);
-    }
-  }
-
-  Future<void> schedulNotifications() async {
+  Future<void> schedulNotifications(Item item) async {
     DateTime notificationDate = DateTime.now();
-/* final senderUser = getUsers()
-.where((user) => user.userId == currentItem!.userId)
-.firstOrNull;
+
 //final item = getItems().firstWhere((element) => element.userId == itemId);
 // final itemName = "Reminder for ${item.text}";
-final title = "${senderUser!.name} sent you new Mission"; /
-/ final notificationBody =
-'${Emojis.activites_reminder_ribbon} ${DateFormat('d MMM yyyy').format(notificationDate)}'; */
+// final title = "${senderUser!.name} sent you new Mission";
+// final notificationBody =
+    // '${Emojis.activites_reminder_ribbon} ${DateFormat('d MMM yyyy').format(notificationDate)}';
     NotificationService.showNotification(
-      title: "title",
-      body: "currentItem!.text",
+      title: "{senderAccount.name} Sent a New Mission",
+      body: "${item.text} - Click Here to see Your Mission",
       scheduled: true,
       day: notificationDate.day,
       month: notificationDate.month,
@@ -144,4 +141,4 @@ final title = "${senderUser!.name} sent you new Mission"; /
       ],
     );
   }
-
+}

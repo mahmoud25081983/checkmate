@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:realm/realm.dart';
+import '../services/connectivity_provider.dart';
+
 
 import 'signup.dart';
 
@@ -14,7 +16,7 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userService = Provider.of<UserService>(context, listen: false);
+    final con = Provider.of<ConnectivityProvider>(context, listen: true);
     return Scaffold(
       body: Center(
         child: Padding(
@@ -25,7 +27,7 @@ class SplashScreen extends StatelessWidget {
               const Icon(
                 Icons.check_rounded,
                 size: 100,
-                color: Colors.greenAccent,
+                color: Color.fromARGB(255, 120, 126, 123),
               ),
               const SizedBox(
                 height: 30,
@@ -72,7 +74,11 @@ class SplashScreen extends StatelessWidget {
                       }
                     }
                   },
-                  child: const Text("Signup", style: TextStyle(fontSize: 20)))
+                  child: const Text("Signup", style: TextStyle(fontSize: 20))),
+
+
+                          Text("${con.isConnected}"),
+                            Text("${con.hasInternet}"),
             ],
           ),
         ),

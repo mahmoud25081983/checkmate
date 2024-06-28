@@ -14,6 +14,7 @@ class _Account {
   bool isAdmin = false;
   @MapTo('user_id')
   late String userId;
+  
   late List<String> tokens;
   late List<String> friends;
   late List<String> itemsId;

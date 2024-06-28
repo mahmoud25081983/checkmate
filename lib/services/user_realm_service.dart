@@ -8,7 +8,7 @@ extension UserRealMService on ItemService {
   // New method to search for accounts by email or name
   List<Account> searchAccounts(String query) {
     return realm.all<Account>().where((account) {
-      return account.email.contains(query) || account.name.contains(query);
+      return account.userId != currentAccount!.userId && (account.email.contains(query) || account.name.contains(query));
     }).toList();
   }
 
@@ -47,7 +47,25 @@ extension UserRealMService on ItemService {
     });
     notifyListeners();
   }
+/////////////////////////////////////////////////////////////////////////////////// new
+    newItemsSharesWithThisUser(Account currentUser, Item item) {
+    // Share the item with another user
+    realm.write(() {
+      if (!currentUser.newItemsId.contains(item.itemId)) {
+        currentUser.newItemsId.add(item.itemId);
+      }
+    });
+    notifyListeners();
+  }
 
+  newRemoveItemFromUser(Account currentUser, Item item) {
+    // Remove the user from the sharedWith list
+    realm.write(() {
+      currentUser.newItemsId.remove(item.itemId);
+    });
+    notifyListeners();
+  }
+///////////////////////////////////////////////////////////////////////////////////////
   removeSharedUser(Item item, Account user) {
     // Remove the user from the sharedWith list
     realm.write(() {

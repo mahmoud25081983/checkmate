@@ -7,6 +7,10 @@ import 'package:checkmate/services/realm_service.dart';
 import 'package:checkmate/services/user_service.dart';
 import 'package:checkmate/schemas/item.dart';
 
+import '../widgets/home_widgets/add_edit_item_dialog.dart';
+import '../widgets/home_widgets/toggle_status_dialog.dart';
+import '../widgets/home_widgets/users_dropdown.dart';
+import '../widgets/home_widgets/selected_users.dart';
 import 'profile_screen.dart';
 import 'splash.dart';
 
@@ -157,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               semanticLabel: "Mark done",
                             ),
                             onPressed: () {
-                              itemService.toggleStatus(item);
+                              showToggleStatusDialog(context, item);
                             },
                           ),
                           Expanded(
@@ -182,6 +186,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
+                          Text(item.isDone
+                              ? "Done by ${item.doneByUser ?? 'Unknown'}"
+                              : "Not done")
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -189,8 +196,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildUserDropdown(item),
-                            _buildSelectedUsers(item),
+                            UserDropDown(
+                                selectedUsers: selectedUsers, item: item),
+                            sharedWithCurrentUser
+                                ? const SizedBox()
+                                : SelectedUsers(
+                                    selectedUsers: selectedUsers, item: item),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.start,
                               children: [
@@ -198,10 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   onPressed: () {
                                     isEdit = true;
                                     currentItem = item;
-                                    showDialog(
-                                      context: context,
-                                      builder: dialogBuilder,
-                                    );
+                                    showItemDialog(
+                                        context, isEdit, currentItem);
                                   },
                                   icon: const Icon(Icons.edit),
                                 ),
@@ -232,7 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           isEdit = false;
-          showDialog(context: context, builder: dialogBuilder);
+          showItemDialog(context, isEdit, null);
         },
         tooltip: "Add item",
         child: const Icon(
@@ -243,145 +252,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget dialogBuilder(BuildContext context) {
-    late String itemName;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: const EdgeInsets.all(10),
-        child: Wrap(
-          children: [
-            Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...createTextFormField(
-                    "Item name",
-                    placeholder:
-                        isEdit == true ? currentItem.text : "Enter item name",
-                    isRequired: true,
-                    onSaved: (value) {
-                      itemName = value!;
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.all(10)),
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          _formKey.currentState!.save();
-                          if (kDebugMode) {
-                            print(itemName);
-                          }
-                          if (isEdit == false) {
-                            itemService.add(itemName);
-                          } else if (isEdit == true) {
-                            itemService.updateItem(currentItem, itemName);
-                          }
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: Text(
-                        isEdit == true ? "Edit" : "Add",
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+  Future<void> toggleStatus(BuildContext context, Item item) async {
+    bool? confirmRemoval = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Removal'),
+          content: Text('Are you sure you Done ${item.text} Mission?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text('Yes'),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> createTextFormField(String label,
-      {String? placeholder,
-      bool isRequired = false,
-      Function(String?)? onSaved}) {
-    return [
-      Text(label, style: const TextStyle(fontSize: 20)),
-      const SizedBox(height: 5),
-      TextFormField(
-        onSaved: onSaved,
-        validator: (value) {
-          return isRequired && (value == null || value.isEmpty)
-              ? "$label is required"
-              : null;
-        },
-        decoration: InputDecoration(hintText: placeholder),
-      ),
-    ];
-  }
-
-  Widget _buildUserDropdown(Item item) {
-/*     List<Account> otherUsers = users
-        .where((user) => user.userId != userService.currentUser?.id)
-        .toList();
- */
-    return DropdownButton<Account>(
-      hint: const Text("Share with..."), // Display hint
-      value: null, // Set the current user as the initial selected value
-      items: itemService.getFriends().map((Account user) {
-        return DropdownMenuItem<Account>(
-          value: user,
-          child: Text(
-              "${user.name} ${user.email}"), // Assuming email is used to display user
         );
-      }).toList(),
-      onChanged: (Account? user) {
-        if (user != null) {
-          itemService.shareItemWithUser(item, user);
-          itemService.itemsSharesWithThisUser(user, item);
-          if (selectedUsers[item.id] == null) {
-            selectedUsers[item.id] = [];
-          }
-
-          selectedUsers[item.id]!
-              .add(user); // Add the selected user to the list for this item
-        }
       },
     );
-  }
 
-  Widget _buildSelectedUsers(Item item) {
-    // Check if the item is shared with the current user
-    bool sharedWithCurrentUser =
-        item.sharedWith.contains(userService.currentUser!.id);
-
-    // If the item is shared with the current user, display the users it is shared with
-    if (sharedWithCurrentUser) {
-      return const SizedBox();
-    } else {
-      // If the item is not shared with the current user, return an empty widget
-      return Wrap(
-        direction: Axis.horizontal,
-        alignment: WrapAlignment.start,
-        spacing: 2,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: itemService
-            .getUsersSharedWith(item)
-            .map((user) => Chip(
-                  padding: EdgeInsets.zero,
-                  label: Text("${user.name} ${user.email}"),
-                  onDeleted: () {
-                    itemService.removeSharedUser(item, user);
-                    itemService.removeItemFromUser(user, item);
-                    selectedUsers[item.id]?.remove(user);
-                    // Remove user from the database
-                  },
-                ))
-            .toList(),
-      );
+    if (confirmRemoval == true) {
+      itemService.toggleStatus(item, itemService.currentAccount!);
     }
   }
 }

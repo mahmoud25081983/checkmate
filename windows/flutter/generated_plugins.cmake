@@ -4,7 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   awesome_notifications
-  firebase_core
+  connectivity_plus
   realm
 )
 

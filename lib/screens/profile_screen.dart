@@ -110,12 +110,12 @@ class ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: itemService
                   .getFriends()
-                  .map((AddedUser) => Chip(
+                  .map((addedUser) => Chip(
                         padding: EdgeInsets.zero,
-                        label: Text("${AddedUser.name} ${AddedUser.email}"),
+                        label: Text("${addedUser.name} ${addedUser.email}"),
                         onDeleted: () {
                           itemService.removeFreind(
-                              AddedUser, currentUserAccount);
+                              addedUser, currentUserAccount);
                         },
                       ))
                   .toList(),
@@ -137,6 +137,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                   final navigator = Navigator.of(context);
                   await userService.logoutUser();
                   await userService.deleteUserFromAppService();
+                  await itemService.deleteAccount(currentUserAccount);
                   await itemService.close();
                   navigator.pushReplacement(
                     MaterialPageRoute(builder: (BuildContext context) {

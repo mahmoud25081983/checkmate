@@ -1,16 +1,17 @@
 import 'package:checkmate/schemas/item.dart';
 import 'package:flutter/material.dart';
 import 'package:realm/realm.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../schemas/account.dart';
 
 class UserService with ChangeNotifier {
-    String id;
+  String id;
 
-   App atlasApp;
+  App atlasApp;
   User? currentUser;
 
-UserService(this.id) : atlasApp = App(AppConfiguration(id));
+  UserService(this.id) : atlasApp = App(AppConfiguration(id));
 
   Future<User> registerUserEmailPassword(
       String email, String password, String name) async {
@@ -22,9 +23,8 @@ UserService(this.id) : atlasApp = App(AppConfiguration(id));
 
     await setRole(loggedInUser, email, name);
     await loggedInUser.refreshCustomData();
-        currentUser = loggedInUser;
-    print(currentUser!.id);
-        notifyListeners();
+    currentUser = loggedInUser;
+    notifyListeners();
 
     return loggedInUser;
   }
@@ -33,14 +33,14 @@ UserService(this.id) : atlasApp = App(AppConfiguration(id));
     Credentials credentials = Credentials.emailPassword(email, password);
     final loggedInUser = await atlasApp.logIn(credentials);
     currentUser = loggedInUser;
-        notifyListeners();
+    notifyListeners();
 
     return loggedInUser;
   }
 
   Future<void> setRole(User loggedInUser, String email, String name) async {
-    final realm =
-        Realm(Configuration.flexibleSync(loggedInUser, [Account.schema, Item.schema]));
+    final realm = Realm(Configuration.flexibleSync(
+        loggedInUser, [Account.schema, Item.schema]));
     String subscriptionName = "rolesSubscription";
     realm.subscriptions.update((mutableSubscriptions) =>
         mutableSubscriptions.add(realm.all<Account>(), name: subscriptionName));
@@ -54,7 +54,6 @@ UserService(this.id) : atlasApp = App(AppConfiguration(id));
     await realm.syncSession.waitForDownload();
     realm.close();
   }
-  
 
   Future<void> logoutUser() async {
     if (atlasApp.currentUser != null) {

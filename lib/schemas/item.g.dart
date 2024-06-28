@@ -16,6 +16,7 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
     String userId,
     String itemId, {
     bool isDone = false,
+    String? doneByUser,
     Iterable<String> sharedWith = const [],
   }) {
     if (!_defaultsSet) {
@@ -28,6 +29,7 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
     RealmObjectBase.set(this, 'isDone', isDone);
     RealmObjectBase.set(this, 'user_id', userId);
     RealmObjectBase.set(this, 'itemId', itemId);
+    RealmObjectBase.set(this, 'doneByUser', doneByUser);
     RealmObjectBase.set<RealmList<String>>(
         this, 'shared_with', RealmList<String>(sharedWith));
   }
@@ -67,6 +69,13 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
       throw RealmUnsupportedSetError();
 
   @override
+  String? get doneByUser =>
+      RealmObjectBase.get<String>(this, 'doneByUser') as String?;
+  @override
+  set doneByUser(String? value) =>
+      RealmObjectBase.set(this, 'doneByUser', value);
+
+  @override
   Stream<RealmObjectChanges<Item>> get changes =>
       RealmObjectBase.getChanges<Item>(this);
 
@@ -86,6 +95,7 @@ class Item extends _Item with RealmEntity, RealmObjectBase, RealmObject {
       SchemaProperty('itemId', RealmPropertyType.string),
       SchemaProperty('sharedWith', RealmPropertyType.string,
           mapTo: 'shared_with', collectionType: RealmCollectionType.list),
+      SchemaProperty('doneByUser', RealmPropertyType.string, optional: true),
     ]);
   }
 }
